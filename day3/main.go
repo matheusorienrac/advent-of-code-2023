@@ -97,7 +97,7 @@ func sumPartNumbers(input string) int {
 	currNumber := Number{}
 	sum := 0
 
-	rows := strings.Split(input, "\n")
+	rows := strings.Split(input, "\r\n")
 	for i := 0; i < len(rows); i++ {
 		for j := 0; j < len(rows[i]); j++ {
 			if unicode.IsDigit(rune(rows[i][j])) {
