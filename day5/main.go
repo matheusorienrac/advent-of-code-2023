@@ -40,11 +40,10 @@ func smallestLocation2(input string) int64 {
 	}
 
 	// will put the translated numbers here
-	newNums := make([]int64, len(currNums))
-	copy(newNums, currNums)
+	newNums := []int64{}
 
 	// starts at 1 cause we have already parsed the seed
-	for _, row := range rows {
+	for rowIndex, row := range rows {
 		// means it is either empty or a \n
 		if len(row) <= 1 {
 			fmt.Println("________________")
@@ -52,8 +51,17 @@ func smallestLocation2(input string) int64 {
 		} else if !unicode.IsDigit(rune(row[0])) {
 			// means it is the name of the map and we finished the previous one.
 			fmt.Println(row)
-			currNums = make([]int64, len(newNums))
-			copy(currNums, newNums)
+			// we only want to do this after we finish the first mapping
+			if rowIndex > 2 {
+
+				// append nums that were not in the previously processed map
+				newNums = append(newNums, currNums...)
+				currNums = make([]int64, len(newNums))
+				copy(currNums, newNums)
+				// empty it again
+				newNums = []int64{}
+
+			}
 			continue
 		}
 
@@ -72,51 +80,65 @@ func smallestLocation2(input string) int64 {
 			log.Panic(err)
 		}
 
-		// skip the ranges
-		for i := 0; i < len(currNums); i += 2 {
+		// iterate by two so we skip the ranges and only get the start of the sequence
+		for i := 0; i < len(currNums); {
 			// checks if original number in the sequence is in the map range
 			if currNums[i] >= origin && currNums[i] < origin+rng {
-				newNums[i] = currNums[i] - origin + target
+				newNums = append(newNums, currNums[i]-origin+target)
 				// if the seed number + range are not completely inside the map origin + rng it means we need to break into two pairs
 				if currNums[i]+currNums[i+1] > origin+rng {
-					newNums[i+1] = currNums[i+1] - ((currNums[i] + currNums[i+1]) - (origin + rng))
-					// adding the start of the new pair
-					newNums = append(newNums, origin+rng)
-					// adding the range of the new pair
-					newNums = append(newNums, currNums[i]+currNums[i+1]-(origin+rng))
+					newNums = append(newNums, currNums[i+1]-((currNums[i]+currNums[i+1])-(origin+rng)))
+
+					// This part exceeded the origin + rng and therefore still needs to be mapped
+					currNums = append(currNums, origin+rng)
+					currNums = append(currNums, currNums[i]+currNums[i+1]-(origin+rng))
+				} else {
+					newNums = append(newNums, currNums[i+1])
 				}
+				currNums = append(currNums[:i], currNums[i+2:]...)
 			} else {
-				// means original not in map range
-				if currNums[i] < origin {
-					//  original is not in the map range, but the sequence is
-					if currNums[i]+currNums[i+1] <= origin+rng && currNums[i]+currNums[i+1] > origin {
-						newNums[i+1] = origin - currNums[i]
+				//  original is not in the map range, but the sequence is
+				if currNums[i] < origin && currNums[i]+currNums[i+1] <= origin+rng && currNums[i]+currNums[i+1] > origin {
+					// This part is below the origin and therefore will still need to be mapped
+					currNums = append(currNums, currNums[i])
+					currNums = append(currNums, origin-currNums[i])
 
-						// adding the start of the new pair.
-						newNums = append(newNums, target)
-						// adding the range of the new pair
-						newNums = append(newNums, currNums[i]+currNums[i+1]-origin)
+					// This part was processed and will move on to the newNumbers slice.
+					newNums = append(newNums, target)
+					newNums = append(newNums, currNums[i]+currNums[i+1]-origin)
 
-					} else if currNums[i]+currNums[i+1] > origin+rng { // means end of sequence is not inside the map
-						newNums[i+1] = origin - currNums[i]
+					currNums = append(currNums[:i], currNums[i+2:]...)
 
-						// adding the start of the new pair
-						newNums = append(newNums, target)
-						// adding the range of the new pair
-						newNums = append(newNums, rng)
+				} else if currNums[i] < origin && currNums[i]+currNums[i+1] > origin+rng { // means end of sequence is not inside the map
+					// This part is below the origin and therefore will still need to be mapped
+					currNums = append(currNums, currNums[i])
+					currNums = append(currNums, origin-currNums[i])
 
-						// adding the start of the new pair
-						newNums = append(newNums, origin+rng)
-						// adding the range of the new pair
-						newNums = append(newNums, currNums[i]+currNums[i+1]-(origin+rng))
-					}
+					// This was processed
+					newNums = append(newNums, target)
+					newNums = append(newNums, rng)
+
+					// This still has to be processed
+					currNums = append(currNums, origin+rng)
+					currNums = append(currNums, currNums[i]+currNums[i+1]-(origin+rng))
+
+					currNums = append(currNums[:i], currNums[i+2:]...)
+				} else {
+					// means we didnt delete anything from the currNums slice and therefore we can add 2 to the index
+					i += 2
 				}
+
 			}
+			// time.Sleep(1 * time.Second)
+			fmt.Println("currNums", currNums)
+			fmt.Println("NewNums", newNums)
+
 		}
 		fmt.Println(newNums)
 	}
 	var lowest int64
-	fmt.Println(len(newNums))
+	// append the currNums that were not in the last processed map
+	newNums = append(newNums, currNums...)
 	lowest = newNums[0]
 	// at the end, the ranges wont matter because the smallest will always be the first number of the sequence
 	for i := 0; i < len(newNums); i += 2 {
