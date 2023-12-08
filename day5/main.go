@@ -47,11 +47,12 @@ func smallestLocation2(input string) int64 {
 	for _, row := range rows {
 		// means it is either empty or a \n
 		if len(row) <= 1 {
+			fmt.Println("________________")
 			continue
 		} else if !unicode.IsDigit(rune(row[0])) {
 			// means it is the name of the map and we finished the previous one.
 			fmt.Println(row)
-			fmt.Println("______________________")
+			currNums = make([]int64, len(newNums))
 			copy(currNums, newNums)
 			continue
 		}
@@ -71,22 +72,54 @@ func smallestLocation2(input string) int64 {
 			log.Panic(err)
 		}
 
-		fmt.Println(target, origin, rng)
-
 		// skip the ranges
 		for i := 0; i < len(currNums); i += 2 {
+			// checks if original number in the sequence is in the map range
 			if currNums[i] >= origin && currNums[i] < origin+rng {
 				newNums[i] = currNums[i] - origin + target
-				// if the seed number + range are inside the map origin + rng it means we can keep the seed range untouched
-				if currNums[i]+currNums[i] > origin+rng {
-					fmt.Println("vai ficar mais dficil")
+				// if the seed number + range are not completely inside the map origin + rng it means we need to break into two pairs
+				if currNums[i]+currNums[i+1] > origin+rng {
+					newNums[i+1] = currNums[i+1] - ((currNums[i] + currNums[i+1]) - (origin + rng))
+					// adding the start of the new pair
+					newNums = append(newNums, origin+rng)
+					// adding the range of the new pair
+					newNums = append(newNums, currNums[i]+currNums[i+1]-(origin+rng))
+				}
+			} else {
+				// means original not in map range
+				if currNums[i] < origin {
+					//  original is not in the map range, but the sequence is
+					if currNums[i]+currNums[i+1] <= origin+rng && currNums[i]+currNums[i+1] > origin {
+						newNums[i+1] = origin - currNums[i]
+
+						// adding the start of the new pair.
+						newNums = append(newNums, target)
+						// adding the range of the new pair
+						newNums = append(newNums, currNums[i]+currNums[i+1]-origin)
+
+					} else if currNums[i]+currNums[i+1] > origin+rng { // means end of sequence is not inside the map
+						newNums[i+1] = origin - currNums[i]
+
+						// adding the start of the new pair
+						newNums = append(newNums, target)
+						// adding the range of the new pair
+						newNums = append(newNums, rng)
+
+						// adding the start of the new pair
+						newNums = append(newNums, origin+rng)
+						// adding the range of the new pair
+						newNums = append(newNums, currNums[i]+currNums[i+1]-(origin+rng))
+					}
 				}
 			}
 		}
+		fmt.Println(newNums)
 	}
 	var lowest int64
+	fmt.Println(len(newNums))
 	lowest = newNums[0]
-	for i := 0; i < len(newNums); i++ {
+	// at the end, the ranges wont matter because the smallest will always be the first number of the sequence
+	for i := 0; i < len(newNums); i += 2 {
 		if newNums[i] < lowest {
 			lowest = newNums[i]
 		}
@@ -124,7 +157,6 @@ func smallestLocation(input string) int64 {
 		} else if !unicode.IsDigit(rune(row[0])) {
 			// means it is the name of the map and we finished the previous one.
 			fmt.Println(row)
-			fmt.Println("______________________")
 			copy(currNums, newNums)
 			continue
 		}
@@ -148,7 +180,10 @@ func smallestLocation(input string) int64 {
 
 		for i := 0; i < len(currNums); i++ {
 			if currNums[i] >= origin && currNums[i] < origin+rng {
+				fmt.Println(fmt.Sprintf("%v corresponds to ", currNums[i]))
 				newNums[i] = currNums[i] - origin + target
+				fmt.Println(fmt.Sprintf("%v\n", newNums[i]))
+
 			}
 		}
 	}
