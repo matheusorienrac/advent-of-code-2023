@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	input, err := os.ReadFile("test.txt")
+	input, err := os.ReadFile("input.txt")
 	if err != nil {
 		log.Fatal(err)
 
@@ -35,7 +35,10 @@ func smallestLocation(input string) int64 {
 		currNums[i] = iNum
 	}
 
+	// will put the translated numbers here
 	newNums := make([]int64, len(currNums))
+	copy(newNums, currNums)
+
 	// starts at 1 cause we have already parsed the seed
 	for _, row := range rows {
 		// means it is either empty or a \n
@@ -43,7 +46,9 @@ func smallestLocation(input string) int64 {
 			continue
 		} else if !unicode.IsDigit(rune(row[0])) {
 			// means it is the name of the map and we finished the previous one.
-			fmt.Println("____________________")
+			fmt.Println(row)
+			fmt.Println("______________________")
+			copy(currNums, newNums)
 			continue
 		}
 
@@ -62,25 +67,19 @@ func smallestLocation(input string) int64 {
 			log.Panic(err)
 		}
 
-		for i := 0; i < len(currNums){
-			fmt.Printf(fmt.Sprintf("%v corresponde a ", currNums[i]))
+		fmt.Println(target, origin, rng)
+
+		for i := 0; i < len(currNums); i++ {
 			if currNums[i] >= origin && currNums[i] < origin+rng {
-				newNums = append(newNums, currNums[i]-origin+target)
-				currNums = append(currNums[:i], currNums[i+1:])
-				fmt.Printf(fmt.Sprintf("%v\n", newNums[i]))
-			} else {
-				i++
-				fmt.Printf(fmt.Sprintf("%v\n", currNums[i]))
+				newNums[i] = currNums[i] - origin + target
 			}
 		}
-		if
-
 	}
 	var lowest int64
-	lowest = currNums[0]
-	for i := 0; i < len(currNums); i++ {
-		if currNums[i] < lowest {
-			lowest = currNums[i]
+	lowest = newNums[0]
+	for i := 0; i < len(newNums); i++ {
+		if newNums[i] < lowest {
+			lowest = newNums[i]
 		}
 	}
 	return lowest
