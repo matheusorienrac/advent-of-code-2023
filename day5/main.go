@@ -107,6 +107,7 @@ func smallestLocation2(input string) int64 {
 					newNums = append(newNums, target)
 					newNums = append(newNums, currNums[i]+currNums[i+1]-origin)
 
+					// delete already processed number from currNumber slice
 					currNums = append(currNums[:i], currNums[i+2:]...)
 
 				} else if currNums[i] < origin && currNums[i]+currNums[i+1] > origin+rng { // means end of sequence is not inside the map
@@ -122,6 +123,7 @@ func smallestLocation2(input string) int64 {
 					currNums = append(currNums, origin+rng)
 					currNums = append(currNums, currNums[i]+currNums[i+1]-(origin+rng))
 
+					// delete already processed number from currNumber slice
 					currNums = append(currNums[:i], currNums[i+2:]...)
 				} else {
 					// means we didnt delete anything from the currNums slice and therefore we can add 2 to the index
@@ -129,7 +131,6 @@ func smallestLocation2(input string) int64 {
 				}
 
 			}
-			// time.Sleep(1 * time.Second)
 			fmt.Println("currNums", currNums)
 			fmt.Println("NewNums", newNums)
 
