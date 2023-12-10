@@ -60,6 +60,7 @@ func scoreCard(card byte) int {
 func totalWinnings(input string) int {
 	rows := strings.Split(input, "\n")
 	players := make([]Player, 0, len(rows))
+	// parses and creates a player type to store hands, bids and handTypes
 	for _, row := range rows {
 		handsAndBids := strings.Split(strings.TrimSpace(row), " ")
 		currHand, currBid := handsAndBids[0], handsAndBids[1]
@@ -80,7 +81,6 @@ func totalWinnings(input string) int {
 		}
 		players = append(players, currPlayer)
 	}
-	rankPlayers(players)
 
 	sort.SliceStable(players, func(i int, j int) bool {
 		switch {
@@ -134,8 +134,4 @@ func getHandType(cardCounts map[rune]int) HandType {
 		}
 	}
 	return handType
-}
-
-func rankPlayers(players []Player) {
-	// gonna sort the players by handType initially so its easier for us to check the ranks
 }
