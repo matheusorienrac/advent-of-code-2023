@@ -22,7 +22,7 @@ func main() {
 // safe for concurrency
 type SafeStepsTakenEachStartingNode struct {
 	mu       sync.Mutex
-	StepsMap map[string]map[int]bool
+	StepsMap map[string][]int
 }
 
 // takes too freaking long to run, will try the parallel route
@@ -54,7 +54,7 @@ func countStepsPart2(input string) int {
 	time.Sleep(time.Second)
 	// if we find out the common steps taken for all starting nodes, we'll have our answer. I'll start a goroutine for each that will save how many steps it took for them to reach a node ending with a Z into this list
 	stepsTakenEachStartingNode := SafeStepsTakenEachStartingNode{
-		StepsMap: map[string]map[int]bool{},
+		StepsMap: map[string][]int{},
 	}
 	// now we'll count the steps
 	keepGoing := true
@@ -66,11 +66,10 @@ func countStepsPart2(input string) int {
 		}()
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		go checkIfCommonSteps(nodesThatEndInA, stepsTakenEachStartingNode, &keepGoing)
-	}()
+	for keepGoing {
+		time.Sleep(time.Second * 5)
+		stepsTaken = checkIfCommonSteps(nodesThatEndInA, stepsTakenEachStartingNode, &keepGoing)
+	}
 
 	wg.Wait()
 
@@ -89,21 +88,19 @@ func findNodesThatEndInAZ(startingNode string, directions string, nodes map[stri
 			stepsTaken++
 			if currNode[2] == 'Z' {
 				stepsTakenEachStartingNode.mu.Lock()
-
 				if stepsTakenEachStartingNode.StepsMap[startingNode] == nil {
 					stepsTakenEachStartingNode.StepsMap[startingNode] = map[int]bool{}
 				}
 				stepsTakenEachStartingNode.StepsMap[startingNode][stepsTaken] = true
-
 				stepsTakenEachStartingNode.mu.Unlock()
 			}
 		}
 	}
 }
 
-func checkIfCommonSteps(nodesThatEndInA []string, stepsTakenEachStartingNode SafeStepsTakenEachStartingNode, keepGoing *bool) {
+func checkIfCommonSteps(nodesThatEndInA []string, stepsTakenEachStartingNode SafeStepsTakenEachStartingNode, keepGoing *bool) int {
 	// after 30 seconds, check if there is a common number of steps taken for all starting nodes, and that is our solution
-	time.Sleep(10 * time.Second)
+	time.Sleep(2 * time.Second)
 	stepsTakenEachStartingNode.mu.Lock()
 
 	// we need to find a stepsTaken number that is exactly the same for all 6 starting numbers.
@@ -119,13 +116,15 @@ func checkIfCommonSteps(nodesThatEndInA []string, stepsTakenEachStartingNode Saf
 			fmt.Println(stepsTaken)
 			// so all the other go routines stop running
 			*keepGoing = false
+			return stepsTaken
 		} else {
 			// reset everything and keep looking
 			matches = 0
 		}
 	}
-
 	stepsTakenEachStartingNode.mu.Unlock()
+	return -1
+
 }
 
 // PART 1
