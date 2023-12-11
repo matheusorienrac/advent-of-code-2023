@@ -30,16 +30,17 @@ func strNumsToIntNums(strNums []string) []int {
 	return intNums
 }
 
-func sumSlice(nums []int) int {
-	sum := 0
-	for _, num := range nums {
-		sum += num
+func allNumsEqual(nums []int) bool {
+	if len(nums) == 0 {
+		return true
 	}
-	if len(nums) <= 1 {
-		fmt.Println(nums)
+	firstNum := nums[0]
+	for i := 0; i < len(nums); i++ {
+		if nums[i] != firstNum {
+			return false
+		}
 	}
-	return sum
-
+	return true
 }
 
 func getExtrapolatedValue(sequences [][]int) int {
@@ -59,7 +60,7 @@ func sumOfExtrapolatedValues(input string) int {
 		nums := strNumsToIntNums(strNums)
 
 		sequences := [][]int{nums}
-		for lastSequence := nums; len(lastSequence) > 0 && sumSlice(lastSequence) != 0; {
+		for lastSequence := nums; !allNumsEqual(lastSequence); {
 			newSequence := []int{}
 			for i := 0; i+1 < len(lastSequence); i++ {
 				newSequence = append(newSequence, lastSequence[i+1]-lastSequence[i])
