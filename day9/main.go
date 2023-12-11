@@ -6,6 +6,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 func main() {
@@ -14,9 +17,44 @@ func main() {
 		log.Panic(err)
 	}
 
-	fmt.Println(sumOfExtrapolatedValues(string(input)))
+	fmt.Println(sumOfExtrapolatedValuesPart2(string(input)))
 }
 
+// Part 2
+func sumOfExtrapolatedValuesPart2(input string) int {
+	rows := strings.Split(input, "\n")
+
+	sum := 0
+	for _, row := range rows {
+		strNums := strings.Split(row, " ")
+		nums := strNumsToIntNums(strNums)
+
+		sequences := [][]int{nums}
+		for lastSequence := nums; !allNumsEqual(lastSequence); {
+			newSequence := []int{}
+			for i := 0; i+1 < len(lastSequence); i++ {
+				newSequence = append(newSequence, lastSequence[i+1]-lastSequence[i])
+			}
+			sequences = append(sequences, newSequence)
+			lastSequence = newSequence
+		}
+		p := message.NewPrinter(language.English)
+		p.Printf("%v %d\n", sequences, getExtrapolatedValuePart2(sequences))
+		sum += getExtrapolatedValuePart2(sequences)
+	}
+	return sum
+}
+
+func getExtrapolatedValuePart2(sequences [][]int) int {
+	extrapolatedValue := 0
+	for i := len(sequences) - 1; i >= 0; i-- {
+		extrapolatedValue *= -1
+		extrapolatedValue += sequences[i][0]
+	}
+	return extrapolatedValue
+}
+
+// PART 1
 func strNumsToIntNums(strNums []string) []int {
 	intNums := make([]int, len(strNums))
 	for i, num := range strNums {
@@ -68,8 +106,8 @@ func sumOfExtrapolatedValues(input string) int {
 			sequences = append(sequences, newSequence)
 			lastSequence = newSequence
 		}
-		// p := message.NewPrinter(language.English)
-		// p.Printf("%v %d\n", sequences, getExtrapolatedValue(sequences))
+		p := message.NewPrinter(language.English)
+		p.Printf("%v %d\n", sequences, getExtrapolatedValue(sequences))
 		sum += getExtrapolatedValue(sequences)
 		fmt.Println(i)
 	}
