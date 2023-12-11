@@ -71,8 +71,10 @@ func countStepsPart2(input string) int {
 }
 
 func findNodesThatEndInAZ(startingNode string, directions string, nodes map[string][]string, keepGoing *bool, c chan StepsToZ, wg *sync.WaitGroup) {
-	defer wg.Done()
-	fmt.Println("startei o node", startingNode)
+	defer func() {
+		wg.Done()
+		fmt.Println("desligaram o findnodes")
+	}()
 	stepsTaken := 0
 	for currNode := startingNode; *keepGoing; {
 		for i := 0; i < len(directions); i++ {
@@ -83,8 +85,8 @@ func findNodesThatEndInAZ(startingNode string, directions string, nodes map[stri
 			}
 			stepsTaken++
 			if currNode[2] == 'Z' {
-				// the answer is greater than 100 million. This is just so things run a bit faster
-				if stepsTaken >= 100000000 {
+				// the answer is greater than 1 trillion. This is just so things run a bit faster
+				if stepsTaken >= 1000000000000 {
 					c <- StepsToZ{startingNode: startingNode, stepsTaken: stepsTaken}
 				}
 			}
@@ -99,38 +101,58 @@ func checkIfCommonSteps(nodesThatEndInA []string, c chan StepsToZ, keepGoing *bo
 		wg.Done()
 	}()
 	// receive from channel
-	stepsTakenEachStartingNode := map[string]map[int]bool{}
+	stepsTakenEachStartingNode := map[string][]int{}
 	for *keepGoing {
 		for i := 0; i < len(c) && i < 50; i++ {
 			elem := <-c
-			if stepsTakenEachStartingNode[elem.startingNode] == nil {
-				stepsTakenEachStartingNode[elem.startingNode] = map[int]bool{}
-			}
-			stepsTakenEachStartingNode[elem.startingNode][elem.stepsTaken] = true
+			stepsTakenEachStartingNode[elem.startingNode] = append(stepsTakenEachStartingNode[elem.startingNode], elem.stepsTaken)
 		}
 
 		// we need to find a stepsTaken number that is exactly the same for all 6 starting numbers.
 		matches := 0
-		for stepsTaken, _ := range stepsTakenEachStartingNode[nodesThatEndInA[0]] {
-			fmt.Println(stepsTaken)
+		deleteCurrent := false
+		for z := 0; z < len(stepsTakenEachStartingNode[nodesThatEndInA[0]]); {
+			stepsTaken := stepsTakenEachStartingNode[nodesThatEndInA[0]][z]
 			for i := 1; i < len(nodesThatEndInA); i++ {
-				if _, ok := stepsTakenEachStartingNode[nodesThatEndInA[i]][stepsTaken]; ok {
-					matches++
-				} else {
+				for j := 0; j < len(stepsTakenEachStartingNode[nodesThatEndInA[i]]); j++ {
+					if stepsTaken == stepsTakenEachStartingNode[nodesThatEndInA[i]][j] {
+						fmt.Println("we have a match", stepsTaken, stepsTakenEachStartingNode[nodesThatEndInA[i]][j], nodesThatEndInA[i])
+						matches++
+						break
+					} else if stepsTaken < stepsTakenEachStartingNode[nodesThatEndInA[i]][j] {
+						// also delete all elements in nodesThatEndInA[i] up to this point, cause they cant be the solution either
+						stepsTakenEachStartingNode[nodesThatEndInA[i]] = stepsTakenEachStartingNode[nodesThatEndInA[i]][j:]
+						deleteCurrent = true
+						break
+					}
+				}
+				// means it broke out of the previous loop without finding any matches and the last number it tried to compare itself to is higher than it, which means it cant be the solution.
+				if deleteCurrent {
+					// delete from the list so we dont check this one again
+					if len(stepsTakenEachStartingNode[nodesThatEndInA[0]]) == 1 {
+						stepsTakenEachStartingNode[nodesThatEndInA[0]] = []int{}
+					} else {
+						stepsTakenEachStartingNode[nodesThatEndInA[0]] = stepsTakenEachStartingNode[nodesThatEndInA[0]][z+1:]
+					}
 					break
 				}
 			}
 			if matches == len(nodesThatEndInA)-1 {
 				// so all the other go routines stop running
 				*keepGoing = false
-				fmt.Println(stepsTaken)
+				fmt.Println(stepsTakenEachStartingNode[nodesThatEndInA[0]][z])
 				return
 			} else {
 				// reset everything and keep looking
+				// means we deleted a number so we dont need to iterate z cause the list shrinked
+				if deleteCurrent {
+					deleteCurrent = false
+				} else {
+					z++
+				}
 				matches = 0
 			}
 		}
-
 	}
 }
 
