@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
+	"time"
 )
 
 func main() {
@@ -17,6 +19,13 @@ func main() {
 
 }
 
+// safe for concurrency
+type SafeStepsTakenEachStartingNode struct {
+	mu       sync.Mutex
+	StepsMap map[string]map[int]bool
+}
+
+// takes too freaking long to run, will try the parallel route
 func countStepsPart2(input string) int {
 	rows := strings.Split(input, "\n")
 
@@ -40,31 +49,83 @@ func countStepsPart2(input string) int {
 		}
 	}
 
-	// now we'll count the steps
-	for currNodes := nodesThatEndInA; !allNodesEndWithZ(currNodes); {
-		for i := 0; i < len(directions) && !allNodesEndWithZ(currNodes); i++ {
-			for j := 0; j < len(currNodes); j++ {
-				fmt.Println(currNodes, i, stepsTaken)
-				if directions[i] == 'L' {
-					currNodes[j] = nodes[currNodes[j]][0]
-				} else {
-					currNodes[j] = nodes[currNodes[j]][1]
-				}
-			}
-			stepsTaken++
-		}
+	var wg sync.WaitGroup
+	fmt.Println(nodesThatEndInA)
+	time.Sleep(time.Second)
+	// if we find out the common steps taken for all starting nodes, we'll have our answer. I'll start a goroutine for each that will save how many steps it took for them to reach a node ending with a Z into this list
+	stepsTakenEachStartingNode := SafeStepsTakenEachStartingNode{
+		StepsMap: map[string]map[int]bool{},
 	}
+	// now we'll count the steps
+	keepGoing := true
+	for _, startingNode := range nodesThatEndInA {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			findNodesThatEndInAZ(startingNode, directions, nodes, &keepGoing, stepsTakenEachStartingNode)
+		}()
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		go checkIfCommonSteps(nodesThatEndInA, stepsTakenEachStartingNode, &keepGoing)
+	}()
+
+	wg.Wait()
 
 	return stepsTaken
 }
 
-func allNodesEndWithZ(nodes []string) bool {
-	for i := 0; i < len(nodes); i++ {
-		if nodes[i][2] != 'Z' {
-			return false
+func findNodesThatEndInAZ(startingNode string, directions string, nodes map[string][]string, keepGoing *bool, stepsTakenEachStartingNode SafeStepsTakenEachStartingNode) {
+	stepsTaken := 0
+	for currNode := startingNode; *keepGoing; {
+		for i := 0; i < len(directions); i++ {
+			if directions[i] == 'L' {
+				currNode = nodes[currNode][0]
+			} else {
+				currNode = nodes[currNode][1]
+			}
+			stepsTaken++
+			if currNode[2] == 'Z' {
+				stepsTakenEachStartingNode.mu.Lock()
+
+				if stepsTakenEachStartingNode.StepsMap[startingNode] == nil {
+					stepsTakenEachStartingNode.StepsMap[startingNode] = map[int]bool{}
+				}
+				stepsTakenEachStartingNode.StepsMap[startingNode][stepsTaken] = true
+
+				stepsTakenEachStartingNode.mu.Unlock()
+			}
 		}
 	}
-	return true
+}
+
+func checkIfCommonSteps(nodesThatEndInA []string, stepsTakenEachStartingNode SafeStepsTakenEachStartingNode, keepGoing *bool) {
+	// after 30 seconds, check if there is a common number of steps taken for all starting nodes, and that is our solution
+	time.Sleep(10 * time.Second)
+	stepsTakenEachStartingNode.mu.Lock()
+
+	// we need to find a stepsTaken number that is exactly the same for all 6 starting numbers.
+	matches := 0
+	for stepsTaken, _ := range stepsTakenEachStartingNode.StepsMap[nodesThatEndInA[0]] {
+		for i := 1; i < len(nodesThatEndInA); i++ {
+			if _, ok := stepsTakenEachStartingNode.StepsMap[nodesThatEndInA[i]][stepsTaken]; ok {
+				matches++
+			}
+		}
+		if matches == len(nodesThatEndInA)-1 {
+			// means we found our solution
+			fmt.Println(stepsTaken)
+			// so all the other go routines stop running
+			*keepGoing = false
+		} else {
+			// reset everything and keep looking
+			matches = 0
+		}
+	}
+
+	stepsTakenEachStartingNode.mu.Unlock()
 }
 
 // PART 1
