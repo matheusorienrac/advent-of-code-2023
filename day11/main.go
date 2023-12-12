@@ -14,13 +14,16 @@ func main() {
 		log.Panic(err)
 	}
 
-	fmt.Println(SumOfLengths(string(input)))
+	part2result := (SumOfLengths(string(input), true)-SumOfLengths(string(input), false))*999999 + SumOfLengths(string(input), false)
+	fmt.Println(part2result)
 }
 
+// Part1
 func expandUniverse(input string) []string {
 	rows := strings.Split(input, "\n")
 	// gonna store all i's and j's that have galaxies
 	// will hold the values of J's that cannot be expanded
+	timesExpandedRow := 0
 	for i := 0; i < len(rows); i++ {
 		expandCurrRow := true
 		for j := 0; j < len(rows[i]); j++ {
@@ -30,12 +33,14 @@ func expandUniverse(input string) []string {
 			}
 		}
 		if expandCurrRow {
+			timesExpandedRow++
 			rows = append(rows[:i+1], rows[i:]...)
 			// so we skip the newly added row
 			i++
 		}
 	}
 
+	timesExpandedCol := 0
 	for j := 0; j < len(rows[0]); j++ {
 		expandCurrCol := true
 		for i := 0; i < len(rows); i++ {
@@ -45,27 +50,31 @@ func expandUniverse(input string) []string {
 			}
 		}
 		if expandCurrCol {
+			timesExpandedCol++
 			for i := 0; i < len(rows); i++ {
-				fmt.Println("neste j:", j, rows[i])
-				fmt.Println("antes", len(rows[i]))
 				rows[i] = rows[i][:j+1] + rows[i][j:]
-				fmt.Println("depois", len(rows[i]))
 			}
 			// skip the newly added col
 			j++
 		}
 	}
 
+	fmt.Println("timesExpandedRow", timesExpandedRow)
+	fmt.Println("timesExpandedCol", timesExpandedCol)
 	for _, row := range rows {
 		fmt.Println(row)
 	}
 	return rows
-
 }
 
-func SumOfLengths(input string) int {
+func SumOfLengths(input string, expand bool) int {
 	galaxyLocations := [][]int{}
-	rows := expandUniverse(input)
+	rows := []string{}
+	if expand {
+		rows = expandUniverse(input)
+	} else {
+		rows = strings.Split(input, "\n")
+	}
 
 	// grabbing the locations and saving them
 	for i := 0; i < len(rows); i++ {
