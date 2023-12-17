@@ -34,7 +34,6 @@ func SumOfArrangements(input string) {
 		copy(currSpringsCopy, springs)
 		for j := 0; j < len(springs); j++ {
 			if rows[i][j] == '?' {
-
 			}
 		}
 
